@@ -11,7 +11,7 @@ servo.value = -0.1
 
 def rotate(val):
     servo.value = val
-    sleep(0.2)
+    sleep(0.05)
     servo.value = None
 
 def stop():
