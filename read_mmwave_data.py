@@ -1,10 +1,18 @@
-#!/usr/bin/env python
 import serial
-import time
-import csv
+from denoiser import *
 import json
 import time
 import numpy as np
+import magnetometer
+from control_angle import rotate
+starting_angle = magnetometer.get_magnetometer_reading()
+flag = 0
+count = 0
+rotate_ccw = 0.0001
+rotate_cw = -0.17
+start_time = time.time()
+stream_counter = 0
+stable_counter = 0
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -16,8 +24,10 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
+
 header = ['Date', 'Time', 'numObj', 'rangeIdx', 'range', 'dopplerIdx', 'doppler', 'peakVal', 'x', 'y', 'z',
-          'magicNumber', 'version','totalPacketLen', 'platform', 'frameNumber', 'timeCpuCycles', 'numDetectedObj', 'numTLVs', 'subFrameNumber',
+          'magicNumber', 'version', 'totalPacketLen', 'platform', 'frameNumber', 'timeCpuCycles', 'numDetectedObj',
+          'numTLVs', 'subFrameNumber',
           'tlv_type', 'tlv_length', 'tlv_numObj', 'tlv_xyzQFormat']
 
 configFileName = 'sensor_out_of_box_demo.cfg'
@@ -26,21 +36,22 @@ Dataport = {}
 byteBuffer = np.zeros(2 ** 15, dtype='uint8')
 byteBufferLength = 0
 
+dn = DeNoising(qsize=2, order=6, fs=30.0, cutoff=0.7, offset=10)
+
 
 def file_create():
     filename = 'dataset/'
     filename += time.strftime("%Y%m%d_%H%M%S")
     filename += '.json'
     print('Created file', filename)
-    #with open(filename, 'w') as f:
-    #    csv.DictWriter(f, fieldnames=header).writeheader()
-
     return filename
 
 
 filename = file_create()
 
 linecounter = 0
+
+
 # ------------------------------------------------------------------
 
 # Function to configure the serial ports and send the data from
@@ -128,7 +139,7 @@ def parseConfigFile(configFileName):
 
 # Funtion to read and parse the incoming data
 def readAndParseData16xx(Dataport, configParameters, filename):
-    global byteBuffer, byteBufferLength
+    global byteBuffer, byteBufferLength, stable_counter
 
     # Constants
     OBJ_STRUCT_SIZE_BYTES = 12
@@ -230,7 +241,7 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                 idX += 4
                 tlv_length = np.matmul(byteBuffer[idX:idX + 4], word)
                 idX += 4
-                #print('*******', ('tlv_type: ', tlv_type, 'tlv_length: ', tlv_length), 'idX: ', idX, '*******')
+                # print('*******', ('tlv_type: ', tlv_type, 'tlv_length: ', tlv_length), 'idX: ', idX, '*******')
             except:
                 pass
 
@@ -243,7 +254,7 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                 idX += 2
                 tlv_xyzQFormat = 2 ** np.matmul(byteBuffer[idX:idX + 2], word)
                 idX += 2
-                #print('*******', 'tlv_numObj: ', tlv_numObj, 'tlv_xyzQFormat: ', tlv_xyzQFormat, 'idX: ', idX, '*******')
+                # print('*******', 'tlv_numObj: ', tlv_numObj, 'tlv_xyzQFormat: ', tlv_xyzQFormat, 'idX: ', idX, '*******')
                 # Initialize the arrays
                 rangeIdx = np.zeros(tlv_numObj, dtype='int16')
                 dopplerIdx = np.zeros(tlv_numObj, dtype='int16')
@@ -267,7 +278,7 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                     z[objectNum] = np.matmul(byteBuffer[idX:idX + 2], word)
                     idX += 2
 
-                    #print('*******', 'rangeIdx[objectNum]: ', rangeIdx[objectNum], 'dopplerIdx[objectNum]: ', dopplerIdx[objectNum], 'peakVal[objectNum]: ', peakVal[objectNum], 'x[objectNum]: ', x[objectNum],
+                    # print('*******', 'rangeIdx[objectNum]: ', rangeIdx[objectNum], 'dopplerIdx[objectNum]: ', dopplerIdx[objectNum], 'peakVal[objectNum]: ', peakVal[objectNum], 'x[objectNum]: ', x[objectNum],
                     #      'y[objectNum]: ', y[objectNum], 'z[objectNum]: ', z[objectNum], 'idX: ', idX, '*******')
                 # Make the necessary corrections and calculate the rest of the data
                 rangeVal = rangeIdx * configParameters["rangeIdxToMeters"]
@@ -294,11 +305,26 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                               'tlv_type': tlv_type, 'tlv_length': tlv_length, 'tlv_numObj': tlv_numObj,
                               'tlv_xyzQFormat': tlv_xyzQFormat}
                 with open(filename, 'a') as f:
-                    #writer = csv.DictWriter(f, header)
-                    #writer.writerow(filedumper)
+                    # writer = csv.DictWriter(f, header)
+                    # writer.writerow(filedumper)
                     f.write(json.dumps(filedumper, cls=NpEncoder))
                     f.write('\n')
                 dataOK = 1
+
+                for i in range(numDetectedObj):
+                    stat = dn.process(x[i], y[i], peakVal[i])
+                    print(stat)
+                    if stat.isSkipped() or stat.isSync():
+                        pass
+                    elif stat.isAvailable():
+                        azim = stat.azim
+                        stable_counter += 1
+                        # print(azim)
+                        if abs(azim) > 15:
+                            print('Started rotating at ', azim)
+                            if stable_counter > 60:
+                                rotate(azim)
+                                stable_counter = 0
 
         # Remove already processed data
         if 0 < idX < byteBufferLength:
@@ -312,7 +338,7 @@ def readAndParseData16xx(Dataport, configParameters, filename):
             # Check that there are no errors with the buffer length
             if byteBufferLength < 0:
                 byteBufferLength = 0
-    print('data:', detObj)
+    # print('data:', detObj)
     return dataOK, frameNumber, detObj
 
 
@@ -333,8 +359,8 @@ def update(filename):
         x = -detObj["x"]
         y = detObj["y"]
 
-        #s.setData(x, y)
-        #QtGui.QApplication.processEvents()
+        # s.setData(x, y)
+        # QtGui.QApplication.processEvents()
 
     return dataOk
 
@@ -346,7 +372,7 @@ CLIport, Dataport = serialConfig(configFileName)
 print('CLIport', CLIport)
 print('Dataport', Dataport)
 configParameters = parseConfigFile(configFileName)
- 
+
 detObj = {}
 frameData = {}
 currentIndex = 0
@@ -372,6 +398,5 @@ while True:
         CLIport.write('sensorStop\n'.encode())
         CLIport.close()
         Dataport.close()
-        #win.close()
+        # win.close()
         break
-
