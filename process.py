@@ -90,7 +90,7 @@ def plot_range_vs_frame(df):
     plt.xlabel('Frames')
     plt.ylabel('Range')
     plt.scatter(time_vals, range_vals)
-    plotfile = ''
+    plotfile = 'single_user_random'
     plotfile += '_range'
     plotfile += '.pdf'
     plt.savefig(plotfile, bbox_inches='tight', format='pdf')
@@ -111,7 +111,7 @@ def plot_rangeIdx_vs_frame(df):
     plt.xlabel('Frames')
     plt.ylabel('rangeIdx')
     plt.scatter(time_vals, range_vals)
-    plotfile = ''
+    plotfile = 'single_user_random'
     plotfile += '_rangeIdx'
     plotfile += '.pdf'
     plt.savefig(plotfile, bbox_inches='tight', format='pdf')
@@ -132,7 +132,7 @@ def plot_dopplerIdx_vs_frame(file):
     plt.xlabel('Frames')
     plt.ylabel('dopplerIdx')
     plt.scatter(time_vals, range_vals)
-    plotfile = ''
+    plotfile = 'single_user_random'
     plotfile += '_peakVal'
     plotfile += '.pdf'
     plt.savefig(plotfile, bbox_inches='tight', format='pdf')
@@ -153,7 +153,7 @@ def plot_peakVal_vs_frame(file):
     plt.xlabel('Frames')
     plt.ylabel('peakVal')
     plt.scatter(time_vals, range_vals)
-    plotfile = ''
+    plotfile = 'single_user_random'
     plotfile += '_peakVal'
     plotfile += '.pdf'
     plt.savefig(plotfile, bbox_inches='tight', format='pdf')
@@ -174,7 +174,7 @@ def plot_x_coord_vs_frame(file):
     plt.xlabel('Frames')
     plt.ylabel('x_coord')
     plt.scatter(time_vals, range_vals)
-    plotfile = ''
+    plotfile = 'single_user_random'
     plotfile += '_x_coord'
     plotfile += '.pdf'
     plt.savefig(plotfile, bbox_inches='tight', format='pdf')
@@ -195,7 +195,7 @@ def plot_y_coord_vs_frame(file):
     plt.xlabel('Frames')
     plt.ylabel('y_coord')
     plt.scatter(time_vals, range_vals)
-    plotfile = ''
+    plotfile = 'single_user_random'
     plotfile += '_y_coord'
     plotfile += '.pdf'
     plt.savefig(plotfile, bbox_inches='tight', format='pdf')
@@ -248,7 +248,7 @@ def plot_y_coord_vs_frame(file):
 
 
 # files = find_files_in_path('dataset/')
-dfs = process_json_to_df(['dataset/20220714_094853.json'])
+dfs = process_json_to_df(['dataset/20220720_140029.json'])
 
 # dfs = pd.read_csv('/home/argha/guicomposer/runtime/gcruntime.v6/mmWave_Demo_Visualizer/data_collection/rpi_data/')
 print('len(dfs)', len(dfs))
