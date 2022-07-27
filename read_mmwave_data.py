@@ -256,8 +256,8 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                 idX += 2
                 tlv_xyzQFormat = 2 ** np.matmul(byteBuffer[idX:idX + 2], word)
                 idX += 2
-                # print('*******', 'tlv_numObj: ', tlv_numObj, 'tlv_xyzQFormat: ', tlv_xyzQFormat, 'idX: ', idX, '*******')
-                # Initialize the arrays
+                # print('*******', 'tlv_numObj: ', tlv_numObj, 'tlv_xyzQFormat: ', tlv_xyzQFormat, 'idX: ', idX,
+                # '*******') Initialize the arrays
                 rangeIdx = np.zeros(tlv_numObj, dtype='int16')
                 dopplerIdx = np.zeros(tlv_numObj, dtype='int16')
                 peakVal = np.zeros(tlv_numObj, dtype='int16')
@@ -280,8 +280,10 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                     z[objectNum] = np.matmul(byteBuffer[idX:idX + 2], word)
                     idX += 2
 
-                    # print('*******', 'rangeIdx[objectNum]: ', rangeIdx[objectNum], 'dopplerIdx[objectNum]: ', dopplerIdx[objectNum], 'peakVal[objectNum]: ', peakVal[objectNum], 'x[objectNum]: ', x[objectNum],
-                    #      'y[objectNum]: ', y[objectNum], 'z[objectNum]: ', z[objectNum], 'idX: ', idX, '*******')
+                    # print('*******', 'rangeIdx[objectNum]: ', rangeIdx[objectNum], 'dopplerIdx[objectNum]: ',
+                    # dopplerIdx[objectNum], 'peakVal[objectNum]: ', peakVal[objectNum], 'x[objectNum]: ',
+                    # x[objectNum], 'y[objectNum]: ', y[objectNum], 'z[objectNum]: ', z[objectNum], 'idX: ', idX,
+                    # '*******')
                 # Make the necessary corrections and calculate the rest of the data
                 rangeVal = rangeIdx * configParameters["rangeIdxToMeters"]
                 dopplerIdx[dopplerIdx > (configParameters["numDopplerBins"] / 2 - 1)] = dopplerIdx[dopplerIdx > (
