@@ -5,6 +5,7 @@ import time
 import numpy as np
 import magnetometer
 from control_angle import rotate
+
 starting_angle = magnetometer.get_magnetometer_reading()
 flag = 0
 count = 0
@@ -13,6 +14,7 @@ rotate_cw = -0.17
 start_time = time.time()
 stream_counter = 0
 stable_counter = 0
+
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
