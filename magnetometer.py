@@ -2,6 +2,7 @@ import smbus		#import SMBus module of I2C
 from time import sleep  #import sleep
 import math
 
+
 #some MPU6050 Registers and their Address
 Register_A     = 0              #Address of Configuration register A
 Register_B     = 0x01           #Address of configuration register B
