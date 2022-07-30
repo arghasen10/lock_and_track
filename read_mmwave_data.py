@@ -4,16 +4,15 @@ import json
 import time
 import numpy as np
 import magnetometer
-from control_angle import rotate
+from control_angle import ServoController
 
 starting_angle = magnetometer.get_magnetometer_reading()
 flag = 0
 count = 0
-rotate_ccw = 0.0001
-rotate_cw = -0.17
 start_time = time.time()
 stream_counter = 0
 stable_counter = 0
+servoController = ServoController()
 
 
 class NpEncoder(json.JSONEncoder):
@@ -256,8 +255,8 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                 idX += 2
                 tlv_xyzQFormat = 2 ** np.matmul(byteBuffer[idX:idX + 2], word)
                 idX += 2
-                # print('*******', 'tlv_numObj: ', tlv_numObj, 'tlv_xyzQFormat: ', tlv_xyzQFormat, 'idX: ', idX,
-                # '*******') Initialize the arrays
+                # print('*******', 'tlv_numObj: ', tlv_numObj, 'tlv_xyzQFormat: ', tlv_xyzQFormat, 'idX: ', idX, '*******')
+                # Initialize the arrays
                 rangeIdx = np.zeros(tlv_numObj, dtype='int16')
                 dopplerIdx = np.zeros(tlv_numObj, dtype='int16')
                 peakVal = np.zeros(tlv_numObj, dtype='int16')
@@ -280,10 +279,8 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                     z[objectNum] = np.matmul(byteBuffer[idX:idX + 2], word)
                     idX += 2
 
-                    # print('*******', 'rangeIdx[objectNum]: ', rangeIdx[objectNum], 'dopplerIdx[objectNum]: ',
-                    # dopplerIdx[objectNum], 'peakVal[objectNum]: ', peakVal[objectNum], 'x[objectNum]: ',
-                    # x[objectNum], 'y[objectNum]: ', y[objectNum], 'z[objectNum]: ', z[objectNum], 'idX: ', idX,
-                    # '*******')
+                    # print('*******', 'rangeIdx[objectNum]: ', rangeIdx[objectNum], 'dopplerIdx[objectNum]: ', dopplerIdx[objectNum], 'peakVal[objectNum]: ', peakVal[objectNum], 'x[objectNum]: ', x[objectNum],
+                    #      'y[objectNum]: ', y[objectNum], 'z[objectNum]: ', z[objectNum], 'idX: ', idX, '*******')
                 # Make the necessary corrections and calculate the rest of the data
                 rangeVal = rangeIdx * configParameters["rangeIdxToMeters"]
                 dopplerIdx[dopplerIdx > (configParameters["numDopplerBins"] / 2 - 1)] = dopplerIdx[dopplerIdx > (
@@ -327,7 +324,7 @@ def readAndParseData16xx(Dataport, configParameters, filename):
                         if abs(azim) > 15:
                             print('Started rotating at ', azim)
                             if stable_counter > 60:
-                                rotate(azim)
+                                servoController.rotate(azim)
                                 stable_counter = 0
 
         # Remove already processed data
